@@ -3,6 +3,9 @@
     const {ipcRenderer} = require('electron');
     var updatePhoneInfoInterval = null;
 
+    var inputSearchFound = false;
+    var inputTextFound = false;
+
     function updatePhoneInfo() {
         if (window.Store == undefined || window.Store.Conn == undefined) {
             return;
@@ -40,15 +43,36 @@
         var observer = new MutationObserver(function (mutations) {
             console.log("Mutations occurred: ", mutations.length);
             var inputSearch = document.querySelector("input.input-search");
-            if (inputSearch) {
+            if (inputSearch && !inputSearchFound) {
                 console.log("Adding event listeners");
-
                 document.addEventListener("keydown", function (event) {
                     // cmd+k and cmd+f focuses on search input.
                     if ((event.keyCode === 75 || event.keyCode == 70) && event.metaKey === true)
                         inputSearch.focus();
                 });
+                inputSearchFound = true;
+            }
 
+            var divInputText = document.querySelector("[contenteditable=\"true\"]");
+            if (divInputText && !inputTextFound && !divInputText.dataset.ctrlh) {
+                console.log("Adding event listeners to input text");
+                divInputText.addEventListener('keydown', (e) => {
+                    var sel = window.getSelection();
+                    var off = sel.anchorOffset;
+                    var text = sel.anchorNode.textContent;
+                    if (e.ctrlKey && e.key === "h" && off > 0) {
+                        sel.anchorNode.textContent = sel.anchorNode.textContent
+                        sel.anchorNode.textContent = text.slice(0, off - 1) + text.slice(off);
+                        sel.collapse(sel.anchorNode, off - 1);
+                        jQuery(sel.anchorNode.parentNode).trigger("change");
+                        jQuery(sel.anchorNode.parentNode).trigger("keydown");
+                    }
+                });
+                divInputText.dataset.ctrlh = true;
+                inputTextFound = true;
+            }
+
+            if (inputTextFound && inputSearchFound) {
                 console.log("Disconnecting the observer");
                 observer.disconnect();
             }
