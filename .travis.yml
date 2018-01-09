@@ -1,64 +1,68 @@
+os:
+  - linux
+  - osx
+
 language: node_js
 node_js: node
 dist: trusty
 before_install:
-- curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-- echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-- sudo add-apt-repository -y ppa:wine/wine-builds
-- sudo apt-get update
-- sudo apt-get install -y wine-staging devscripts build-essential lintian dh-make
-  rpm yarn
-- echo "deb http://ftp.debian.org/debian jessie-backports main" | sudo tee /etc/apt/sources.list.d/jessie-backports.list
-- sudo apt-get update
-- sudo apt-get -t jessie-backports install -y --force-yes flatpak flatpak-builder
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:wine/wine-builds; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y wine-staging devscripts build-essential lintian dh-make
+  rpm yarn; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then echo "deb http://ftp.debian.org/debian jessie-backports main" | sudo tee /etc/apt/sources.list.d/jessie-backports.list; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -t jessie-backports install -y --force-yes flatpak flatpak-builder; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install node yarn; fi
 install:
 - yarn
 before_script:
-- export WINEDLLOVERRIDES="mscoree,mshtml="
-- export PATH=$PATH:/opt/wine-staging/bin/
-- export DISPLAY=:99.0
-- sh -e /etc/init.d/xvfb start
-- sleep 3
-- rm -rf rpmbuild/
-- mkdir -p rpmbuild/SOURCES
-- tar -cjf rpmbuild/SOURCES/dummy.tar.bz2 readme.md
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export WINEDLLOVERRIDES="mscoree,mshtml="; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PATH=$PATH:/opt/wine-staging/bin/; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export DISPLAY=:99.0; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sh -e /etc/init.d/xvfb start; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sleep 3; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then rm -rf rpmbuild/; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir -p rpmbuild/SOURCES; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tar -cjf rpmbuild/SOURCES/dummy.tar.bz2 readme.md; fi
 script:
-- yarn run build:linux
-- debuild --no-lintian -b -uc -us
-- yarn run build:osx
-- yarn run build:win
-- yarn run build:linuxarmv7l
-- debuild --no-lintian -b -uc -us -aarmhf
-- cd rpmbuild && rpmbuild --define "_topdir $(pwd)/" -bb ../whatsapp-desktop.spec
-  && cd ..
-- yarn run build:linux32
-- yarn run build:appimage
-- yarn run build:flatpak64
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then yarn run build:linux; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then debuild --no-lintian -b -uc -us; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then yarn run build:win; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then yarn run build:linuxarmv7l; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then debuild --no-lintian -b -uc -us -aarmhf; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd rpmbuild && rpmbuild --define "_topdir $(pwd)/" -bb ../whatsapp-desktop.spec
+  && cd ..; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then yarn run build:linux32; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then yarn run build:appimage; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then yarn run build:flatpak64; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then yarn run build:osx; fi
 before_deploy:
-- sudo apt-get install -y zip tar gzip
-- cd dist/ && zip -qr WhatsApp-${TRAVIS_TAG}-win32-x64.zip WhatsApp-win32-x64/ && cd
-  ..
-- cd dist/ && zip -qr WhatsApp-${TRAVIS_TAG}-darwin-x64.zip WhatsApp-darwin-x64/ &&
-  cd ..
-- cd dist/ && tar czf WhatsApp-${TRAVIS_TAG}-linux-ia32.tar.gz WhatsApp-linux-ia32/
-  && cd ..
-- cd dist/ && tar czf WhatsApp-${TRAVIS_TAG}-linux-x64.tar.gz WhatsApp-linux-x64/
-  && cd ..
-- cd dist/ && tar czf WhatsApp-${TRAVIS_TAG}-linux-armv7l.tar.gz WhatsApp-linux-armv7l/
-  && cd ..
-- export RELEASE_AMD64_PKG_FILE=$(ls ../whatsapp-desktop*amd64.deb)
-- export RELEASE_ARM_PKG_FILE=$(ls ../whatsapp-desktop*armhf.deb)
-- export RELEASE_AMD64_RPM_FILE=$(ls rpmbuild/RPMS/x86_64/*.rpm)
-- export RELEASE_APPIMAGE_FILE=$(ls dist/whatsapp-desktop*-x86_64.AppImage)
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y zip tar gzip; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd dist/ && zip -qr WhatsApp-${TRAVIS_TAG}-win32-x64.zip WhatsApp-win32-x64/ && cd ..; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd dist/ && tar czf WhatsApp-${TRAVIS_TAG}-linux-ia32.tar.gz WhatsApp-linux-ia32/
+  && cd ..; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd dist/ && tar czf WhatsApp-${TRAVIS_TAG}-linux-x64.tar.gz WhatsApp-linux-x64/
+  && cd ..; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd dist/ && tar czf WhatsApp-${TRAVIS_TAG}-linux-armv7l.tar.gz WhatsApp-linux-armv7l/
+  && cd ..; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export RELEASE_AMD64_PKG_FILE=$(ls ../whatsapp-desktop*amd64.deb)
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export RELEASE_ARM_PKG_FILE=$(ls ../whatsapp-desktop*armhf.deb)
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export RELEASE_AMD64_RPM_FILE=$(ls rpmbuild/RPMS/x86_64/*.rpm)
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export RELEASE_APPIMAGE_FILE=$(ls dist/whatsapp-desktop*-x86_64.AppImage)
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cd dist/ && zip -qr WhatsApp-${TRAVIS_TAG}-darwin-x64.zip WhatsApp-darwin-x64/ && cd ..; fi
 deploy:
   - provider: releases
     skip_cleanup: true
     on:
       tags: true
+      condition: $TRAVIS_OS_NAME = linux
     file_glob: true
     file:
     - dist/WhatsApp-${TRAVIS_TAG}-win32-x64.zip
-    - dist/WhatsApp-${TRAVIS_TAG}-darwin-x64.zip
     - dist/WhatsApp-${TRAVIS_TAG}-linux-x64.tar.gz
     - dist/WhatsApp-${TRAVIS_TAG}-linux-ia32.tar.gz
     - dist/WhatsApp-${TRAVIS_TAG}-linux-armv7l.tar.gz
@@ -69,12 +73,22 @@ deploy:
     - dist/it.enrico204.whatsapp-desktop_master_x64.flatpak
     api_key:
       secure: TX/psfzZ+R8Ua7y/uWUSFLVzajfANM/flNyDO5bG9X/LqURoWOQEnjmvUYV4xBp9IJM/xc5/icvUfl2DyNPunmZdRtVv0M85JhkKkQ0wywGhSHENo33kAWDn9v9gFb5w/cRpkghHOYUH9C7GLSulVxtuyb4FacrvvUdqr6kcth9gzWAqG3MBJNID+sI0/JooyGdu2VTMaszlImyzM4m76UQVl9K09ZCQbtoSlnVGYBhkMbu13gh750LWFbdf02KUkEO3TxQ8WYRMJ1VaXy0j/qcCi3mFAQxWxwvvxDrayNuZPoqLcfp0FFJLtqwT+QIaCPHpWwUWiiAHpLWNj/OmzEk7NkmTkKJ44ToBnJgAs3KibEvS+qrXdUO9qOWYUFG27EkCjQSppSWtZmn9EkY4BilSp6lFL8fPQWcjzvT7tkoQUs//g+cgyYHu5t3fgT3Ld1FuSkbpCzixxwbfWzUnR+jco0aWmtAT6f1wpbHmWAWEUI12SNEy8BtnvyZdXCGIYJFD7vJEM9i8NoT/ztvW1uXq7zqN8IZAFYt6BwmgHSWJ/KKsvaD9itOApVJCWEZy/JH7bm/7iE1z9KjWfUelfIwLAc1VJ5HHtEVfeLdz1oCwQ/WXSPeasQuMPqxrBFgHteyz6zdg1cgY3BoiLMZFpyaafYKdLYpDS9pS7rTuvuM=
+  - provider: releases
+    skip_cleanup: true
+    on:
+      tags: true
+      condition: $TRAVIS_OS_NAME = osx
+    file_glob: true
+    file: dist/WhatsApp-${TRAVIS_TAG}-darwin-x64.zip
+    api_key:
+      secure: TX/psfzZ+R8Ua7y/uWUSFLVzajfANM/flNyDO5bG9X/LqURoWOQEnjmvUYV4xBp9IJM/xc5/icvUfl2DyNPunmZdRtVv0M85JhkKkQ0wywGhSHENo33kAWDn9v9gFb5w/cRpkghHOYUH9C7GLSulVxtuyb4FacrvvUdqr6kcth9gzWAqG3MBJNID+sI0/JooyGdu2VTMaszlImyzM4m76UQVl9K09ZCQbtoSlnVGYBhkMbu13gh750LWFbdf02KUkEO3TxQ8WYRMJ1VaXy0j/qcCi3mFAQxWxwvvxDrayNuZPoqLcfp0FFJLtqwT+QIaCPHpWwUWiiAHpLWNj/OmzEk7NkmTkKJ44ToBnJgAs3KibEvS+qrXdUO9qOWYUFG27EkCjQSppSWtZmn9EkY4BilSp6lFL8fPQWcjzvT7tkoQUs//g+cgyYHu5t3fgT3Ld1FuSkbpCzixxwbfWzUnR+jco0aWmtAT6f1wpbHmWAWEUI12SNEy8BtnvyZdXCGIYJFD7vJEM9i8NoT/ztvW1uXq7zqN8IZAFYt6BwmgHSWJ/KKsvaD9itOApVJCWEZy/JH7bm/7iE1z9KjWfUelfIwLAc1VJ5HHtEVfeLdz1oCwQ/WXSPeasQuMPqxrBFgHteyz6zdg1cgY3BoiLMZFpyaafYKdLYpDS9pS7rTuvuM=
   - provider: packagecloud
     repository: Whatsapp-Desktop
     username: Enrico204
     skip_cleanup: true
     on:
       tags: true
+      condition: $TRAVIS_OS_NAME = linux
     package_glob: ../*.deb
     dist: "debian/stretch"
     token:
@@ -85,6 +99,7 @@ deploy:
     skip_cleanup: true
     on:
       tags: true
+      condition: $TRAVIS_OS_NAME = linux
     package_glob: "${RELEASE_AMD64_RPM_FILE}"
     dist: "fedora/27"
     token:
